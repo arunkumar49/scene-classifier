@@ -1,0 +1,113 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+env/
+
+# Testing, linting, type checking
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Jupyter / SageMaker Studio
+.ipynb_checkpoints/
+.virtual_documents/
+
+# Data: real datasets live in S3. Folder structure can be kept with .gitkeep files.
+# Anchored with a leading "/" so src/scene_classifier/data/ and configs/data/ stay tracked.
+/data/**
+!/data/**/
+!/data/**/.gitkeep
+
+# Artifacts: real models live in S3 / Model Registry
+/artifacts/**
+!/artifacts/**/
+!/artifacts/**/.gitkeep
+
+# Dataset files anywhere in the repo (use `git add -f` for small test fixtures)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.npy
+*.npz
+*.parquet
+*.feather
+*.arrow
+*.tfrecord
+*.lmdb
+*.mdb
+
+# Model weights: pretrained downloads and fine-tuned outputs
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.h5
+*.hdf5
+*.keras
+*.pb
+*.tflite
+*.engine
+*.trt
+*.mar
+*.gguf
+*.pkl
+*.pickle
+*.joblib
+
+# Training outputs: checkpoints, logs, locally run experiment trackers
+# Don't add "models/" or "data/" unanchored here: they would hide code in src/scene_classifier/.
+checkpoints/
+outputs/
+multirun/
+runs/
+logs/
+lightning_logs/
+mlruns/
+mlartifacts/
+wandb/
+events.out.tfevents.*
+*.log
+
+# Caches, if HF_HOME / TORCH_HOME point inside the project
+.cache/
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+credentials
+kaggle.json
+.netrc
+
+# Editors: share team settings, ignore personal ones
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
