@@ -1,0 +1,7 @@
+_target_: scene_classifier.data.data_module.DataModule
+
+dataset_name: sfarrukhm/intel-image-classification
+revision: main
+train_split: train
+val_split: val
+test_split: test

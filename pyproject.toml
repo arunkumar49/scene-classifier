@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "ruff>=0.17.1",
+    "datasets[vision]>=5.1.0",
 ]
 
 [project.scripts]
@@ -17,3 +17,11 @@ scene-classifier = "scene_classifier:main"
 [build-system]
 requires = ["uv_build>=0.13.0,<0.14.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "datasets>=5.1.0",
+    "ipykernel>=7.4.0",
+    "lightning>=2.6.6",
+    "ruff>=0.17.1",
+]
