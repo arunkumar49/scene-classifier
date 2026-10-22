@@ -5,3 +5,17 @@ revision: main
 train_split: train
 val_split: val
 test_split: test
+
+# Validation split carved from the Hub train split, stratified by label (DR-01)
+val_size: 0.15
+seed: 42
+
+# Upload destination: s3://<bucket>/<prefix>/<dataset_version>/<split>/<class>/<image>
+s3:
+  bucket: scene-classifier-dev-2218  # set to your bucket name before uploading
+  prefix: scene-classifier/data/processed
+  dataset_version: v1  # a completed version is never overwritten; bump it instead
+  region: null  # null uses the AWS profile's region
+  kms_key_id: arn:aws:kms:ap-south-1:23423423:key/dc0e236b-8c0d-4095-9211-1e0d2f716613  # null relies on the bucket's default SSE-KMS encryption
+  max_workers: 32
+  profile: scene-dev
