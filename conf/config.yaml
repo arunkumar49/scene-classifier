@@ -1,0 +1,5 @@
+# Primary config: one option from each config group
+defaults:
+  - data: hf_intel-image-classification
+  - model: resnet50
+  - _self_

@@ -7,21 +7,15 @@ a ``manifest.csv`` (one row per image) and a ``_metadata.json`` are written.
 """
 
 
-from collections.abc import Iterable, Iterator, Mapping
-from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+import mimetypes
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from http import client
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
+
 import boto3
-import PIL.Image
-from botocore.config import Config
-from datasets import ClassLabel, Dataset, DatasetDict, Image
-from moto import kms
-from tqdm import tqdm
-import io
-import mimetypes
+from datasets import Dataset, Image
+
 from scene_classifier.utils.data_config import S3UploadConfig
 
 if TYPE_CHECKING:
@@ -108,7 +102,7 @@ def upload_dataset_to_s3(
         s3_key = f"data/raw/{split}/{item['label']}/{image_name}"
 
         # Upload to S3
-        request: "PutObjectRequestTypeDef" = {
+        request: PutObjectRequestTypeDef = {
             'Bucket': s3_config.bucket,
             'Key': s3_key,
             'Body': body,

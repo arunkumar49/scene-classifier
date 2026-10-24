@@ -6,6 +6,15 @@ train_split: train
 val_split: val
 test_split: test
 
+# Fixed class taxonomy (PRD 7.2): the list index is the class ID
+classes:
+  - buildings
+  - forest
+  - glacier
+  - mountain
+  - sea
+  - street
+
 # Validation split carved from the Hub train split, stratified by label (DR-01)
 val_size: 0.15
 seed: 42

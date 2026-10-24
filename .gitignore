@@ -26,7 +26,7 @@ htmlcov/
 .virtual_documents/
 
 # Data: real datasets live in S3. Folder structure can be kept with .gitkeep files.
-# Anchored with a leading "/" so src/scene_classifier/data/ and configs/data/ stay tracked.
+# Anchored with a leading "/" so src/scene_classifier/data/ and conf/data/ stay tracked.
 /data/**
 !/data/**/
 !/data/**/.gitkeep

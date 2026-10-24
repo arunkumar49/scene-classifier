@@ -39,7 +39,7 @@ GitHub Actions (on merge to main, via OIDC) ──▶ SageMaker Pipeline
 ```
 scene-classifier/
 ├── artifacts/              # Local scratch outputs (gitignored). Real artifacts live in S3.
-├── configs/
+├── conf/
 │   ├── data/               # Dataset settings: S3 paths, dataset version, splits
 │   ├── experiment/         # Combines data + model + training configs for one run
 │   ├── model/              # Model architecture settings
@@ -135,7 +135,7 @@ s3://<bucket>/scene-classifier/
 - `scripts/train.py` is the launcher. It submits a Training Job with the SageMaker Python SDK (`ModelTrainer`). SDK V3 moved the import paths (`from sagemaker.train import ModelTrainer`); V2 examples online use different ones, so match the docs to the installed major version.
 - The job runs the `src/scene_classifier/` code in an AWS PyTorch Deep Learning Container on a GPU instance, e.g. ml.g4dn.xlarge or ml.g5.xlarge. The instance type needs an approved service quota (separate quotas for on-demand and spot training).
 - Input is a dataset prefix in S3, and the trained model is written back to S3.
-- Hyperparameters come from `configs/`.
+- Hyperparameters come from `conf/`.
 - Turn on managed spot training and save checkpoints to S3. This costs up to 90% less than on-demand.
 - Tag each job with the git commit SHA and the dataset version.
 
@@ -168,7 +168,7 @@ s3://<bucket>/scene-classifier/
 
 ### .gitignore
 
-Add these entries. The leading `/` matters: plain `data/` would also ignore `src/scene_classifier/data/` and `configs/data/`.
+Add these entries. The leading `/` matters: plain `data/` would also ignore `src/scene_classifier/data/` and `conf/data/`.
 
 ```
 /data/

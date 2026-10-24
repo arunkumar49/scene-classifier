@@ -1,10 +1,7 @@
-import yaml
-from pathlib import Path
 from dataclasses import dataclass
-from typing import Any
-import argparse
+from typing import Any, cast
 
-DATA_CONFIG_PATH: str = "configs/data/hf_intel-image-classification.yaml"
+from omegaconf import DictConfig, OmegaConf
 
 
 @dataclass(frozen=True)
@@ -24,31 +21,28 @@ class S3UploadConfig:
 
 @dataclass(frozen=True)
 class DataConfig:
-    """Dataset settings from a configs/data/ YAML file."""
+    """Dataset settings from a conf/data/ YAML file."""
 
     dataset_name: str
     revision: str
     train_split: str
     val_split: str
     test_split: str
+    classes: list[str]  # class names in class ID order (PRD 7.2)
     val_size: float
     seed: int
     s3: S3UploadConfig
 
 
-def load_data_config(config_path: str | Path = DATA_CONFIG_PATH) -> DataConfig:
-    with Path(config_path).open(encoding="utf-8") as f:
-        config: dict[str, Any] = yaml.safe_load(f)  # a plain dict
-    config.pop("_target_", None)  # Hydra metadata, not a setting
-    s3 = S3UploadConfig(**config.pop("s3"))
-    return DataConfig(**config, s3=s3)
+def to_data_config(config: DictConfig) -> DataConfig:
+    """Build a DataConfig from a data config, e.g. the composed Hydra config's data group."""
+    # Plain dicts and lists, so the dataclasses never hold OmegaConf types
+    values = cast(dict[str, Any], OmegaConf.to_container(config, resolve=True))
+    values.pop("_target_", None)  # Hydra metadata, not a setting
+    s3 = S3UploadConfig(**values.pop("s3"))
+    return DataConfig(**values, s3=s3)
 
 
 
 
-def parse_data_config() -> DataConfig:
-    """Load the DataConfig named by --config, or the default."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=Path, default=Path(DATA_CONFIG_PATH))
-    args = parser.parse_args()
-    return load_data_config(args.config)
+

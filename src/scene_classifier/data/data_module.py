@@ -1,6 +1,7 @@
+from datasets import ClassLabel, Dataset
 from lightning import LightningDataModule
 from PIL.JpegImagePlugin import JpegImageFile
-from datasets import Dataset, ClassLabel
+
 
 class DataModule(LightningDataModule):
     
