@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, cast
+from pathlib import Path
 
 from omegaconf import DictConfig, OmegaConf
 
@@ -29,6 +30,10 @@ class DataConfig:
     val_split: str
     test_split: str
     classes: list[str]  # class names in class ID order (PRD 7.2)
+    image_suffixes: list[str]
+    local_dir: str | Path
+    batch_size: int
+    num_workers: int
     val_size: float
     seed: int
     s3: S3UploadConfig
