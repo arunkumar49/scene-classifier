@@ -35,7 +35,7 @@ class LoadData:
 
     def split_train_test_val(self) -> None:
         split_dataset = self.data_dictionary[self.config.train_split].train_test_split(
-            test_size=self.config.val_size, seed=self.config.seed
+            test_size=self.config.val_size, seed=self.config.seed, stratify_by_column="label"
         )
         self.val_dataset = split_dataset.pop("test")
         self.train_dataset = split_dataset.pop("train")
