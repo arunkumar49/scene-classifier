@@ -82,6 +82,7 @@ logs/
 lightning_logs/
 mlruns/
 mlartifacts/
+mlflow.db
 wandb/
 events.out.tfevents.*
 *.log

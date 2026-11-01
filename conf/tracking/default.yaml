@@ -1,0 +1,3 @@
+# Shared base for local and sagemaker; not selected on its own
+experiment_name: scene-classifier-${hydra:runtime.choices.model}
+run_name: ${hydra:runtime.choices.training}

@@ -1,0 +1,8 @@
+# SageMaker Training Jobs: no fallbacks, so a missing env var fails before training starts
+defaults:
+  - default
+  - _self_
+
+tracking_uri: ${oc.env:MLFLOW_TRACKING_URI}
+log_model: true
+git_sha: ${oc.env:GIT_COMMIT_SHA}
