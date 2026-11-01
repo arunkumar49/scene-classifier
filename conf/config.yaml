@@ -2,4 +2,6 @@
 defaults:
   - data: hf_intel-image-classification
   - model: resnet50
+  - training: head_only
+  - trainer: cpu
   - _self_

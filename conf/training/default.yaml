@@ -1,0 +1,5 @@
+# Shared base for the strategy files (head_only, full_finetune); not selected on its own
+max_epochs: 5
+patience: 3
+weight_decay: 0.01
+seed: 42

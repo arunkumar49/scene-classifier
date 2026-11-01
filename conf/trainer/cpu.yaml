@@ -1,0 +1,7 @@
+# Local runs and smoke tests
+defaults:
+  - default
+  - _self_
+
+accelerator: cpu
+precision: 32-true
