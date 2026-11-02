@@ -7,14 +7,17 @@ Run from the project root; extra arguments are Hydra overrides for the job:
 import os
 import subprocess
 import sys
-from pathlib import Path
+import tarfile
+from fnmatch import fnmatch
+from pathlib import Path, PurePosixPath
+from tempfile import TemporaryDirectory
 
 import boto3
 from omegaconf import OmegaConf
 from sagemaker.core import image_uris
 from sagemaker.core.helper.session_helper import Session
 from sagemaker.core.shapes import Tag
-from sagemaker.train.configs import (
+from sagemaker.core.training.configs import (
     Compute,
     OutputDataConfig,
     SourceCode,
@@ -32,7 +35,9 @@ IMAGE_VERSION = "2.9.0"
 VOLUME_SIZE_GB = 50
 MAX_RUNTIME_SECONDS = 6 * 3600
 BASE_JOB_NAME = "scene-classifier"
-# The job role can only write under this prefix, so code uploads and outputs go here
+# The job role can only read and write under this prefix. Outputs go to
+# <prefix>/<job>/output; the SDK stages the code under the output path's prefix,
+# so <prefix>/staging/<job>/input
 JOBS_PREFIX = "scene-classifier/jobs"
 
 # Always true for a Training Job; the command line adds the rest
@@ -43,8 +48,8 @@ JOB_OVERRIDES = [
     "hydra.run.dir=/opt/ml/output/data/run",  # SageMaker uploads this folder to S3
 ]
 
-# Matched against names at every level, so never add "data":
-# it would also drop src/scene_classifier/data/ and conf/data/
+# Left out of the code archive. Matched against names at every level, so never
+# add "data": it would also drop src/scene_classifier/data/ and conf/data/
 IGNORE_PATTERNS = [
     ".venv", ".git", "__pycache__", ".pytest_cache", ".ruff_cache",
     "outputs", "artifacts", "processed", "raw", "notebooks",
@@ -72,6 +77,22 @@ def git_sha() -> str:
     return git("rev-parse", "HEAD")
 
 
+def pack_source(dest_dir: Path) -> Path:
+    """Tar the project for the job, leaving out IGNORE_PATTERNS.
+
+    The SDK uploads a source folder from Windows with backslashes in nested S3 keys,
+    so src/scene_classifier/ never reaches the container. tarfile always writes "/".
+    """
+    def keep(member: tarfile.TarInfo) -> tarfile.TarInfo | None:
+        name = PurePosixPath(member.name).name
+        return None if any(fnmatch(name, pattern) for pattern in IGNORE_PATTERNS) else member
+
+    archive = dest_dir / "source.tar.gz"
+    with tarfile.open(archive, "w:gz") as tar:
+        tar.add(PROJECT_ROOT, arcname=".", filter=keep)
+    return archive
+
+
 def main() -> None:
     s3 = OmegaConf.load(DATA_CONFIG).s3
     sha = git_sha()
@@ -83,7 +104,6 @@ def main() -> None:
     session = Session(
         boto_session=boto3.Session(profile_name=s3.profile, region_name=s3.region),
         default_bucket=s3.bucket,
-        default_bucket_prefix=JOBS_PREFIX,
     )
     image = image_uris.retrieve(
         framework="pytorch",
@@ -95,39 +115,40 @@ def main() -> None:
     )
     overrides = " ".join(JOB_OVERRIDES + sys.argv[1:])
 
-    trainer = ModelTrainer(
-        sagemaker_session=session,
-        role=require_env("SAGEMAKER_ROLE_ARN"),
-        training_image=image,
-        base_job_name=BASE_JOB_NAME,
-        source_code=SourceCode(
-            source_dir=str(PROJECT_ROOT),
-            # pip, not uv: the lock's exact torch build would replace the image's
-            command=(
-                "pip install . sagemaker-mlflow==0.5.0 && "
-                f"python scripts/train.py {overrides}"
+    # The archive must exist until train() has uploaded it
+    with TemporaryDirectory() as tmp:
+        trainer = ModelTrainer(
+            sagemaker_session=session,
+            role=require_env("SAGEMAKER_ROLE_ARN"),
+            training_image=image,
+            base_job_name=BASE_JOB_NAME,
+            input_s3_key_prefix="staging",
+            source_code=SourceCode(
+                # The container runs `tar -xzf` on it before the command
+                source_dir=str(pack_source(Path(tmp))),
+                # pip, not uv: the lock's exact torch build would replace the image's
+                command=(
+                    "pip install . sagemaker-mlflow==0.5.0 && "
+                    f"python scripts/train.py {overrides}"
+                ),
             ),
-            ignore_patterns=IGNORE_PATTERNS,
-        ),
-        compute=Compute(
-            instance_type=INSTANCE_TYPE, instance_count=1, volume_size_in_gb=VOLUME_SIZE_GB
-        ),
-        stopping_condition=StoppingCondition(max_runtime_in_seconds=MAX_RUNTIME_SECONDS),
-        output_data_config=OutputDataConfig(
-            s3_output_path=f"s3://{s3.bucket}/{JOBS_PREFIX}/output"
-        ),
-        # Only these two: AWS_PROFILE would break boto3 in the container
-        environment={
-            "MLFLOW_TRACKING_URI": require_env("MLFLOW_TRACKING_URI"),
-            "GIT_COMMIT_SHA": sha,
-        },
-        tags=[
-            Tag(key="git_sha", value=sha),
-            Tag(key="dataset_version", value=s3.dataset_version),
-        ],
-    )
-    # Streams the job's logs here. Ctrl+C stops the streaming, not the job
-    trainer.train(wait=True)
+            compute=Compute(
+                instance_type=INSTANCE_TYPE, instance_count=1, volume_size_in_gb=VOLUME_SIZE_GB
+            ),
+            stopping_condition=StoppingCondition(max_runtime_in_seconds=MAX_RUNTIME_SECONDS),
+            output_data_config=OutputDataConfig(s3_output_path=f"s3://{s3.bucket}/{JOBS_PREFIX}"),
+            # Only these two: AWS_PROFILE would break boto3 in the container
+            environment={
+                "MLFLOW_TRACKING_URI": require_env("MLFLOW_TRACKING_URI"),
+                "GIT_COMMIT_SHA": sha,
+            },
+            tags=[
+                Tag(key="git_sha", value=sha),
+                Tag(key="dataset_version", value=s3.dataset_version),
+            ],
+        )
+        # Streams the job's logs here. Ctrl+C stops the streaming, not the job
+        trainer.train(wait=True)
 
 
 if __name__ == "__main__":
