@@ -1,0 +1,36 @@
+# Advisories accepted by the Dependency review check (.github/workflows/dependency-review.yml).
+# Only these IDs are skipped; any new advisory still fails the check.
+# Remove each group when its "remove when" condition is met.
+
+allow-ghsas:
+  # mlflow==3.10.1 is pinned to match the SageMaker MLflow App (AWS: client and server
+  # versions must match). These are in the MLflow server, UI, AI Gateway, webhooks and
+  # job/trace endpoints, or in flavors we don't use. We only run the client; the server
+  # is AWS-managed and accepts IAM-signed requests only.
+  # Remove when: the App, and so the pin, reaches mlflow >= 3.17.2
+  - GHSA-7qhf-v65m-g5f3  # unauthenticated FastAPI job endpoints (server)
+  - GHSA-g35p-px32-whv6  # env var injection in AI Gateway secrets (server)
+  - GHSA-7gwp-5pfp-969j  # SSRF in webhook delivery (server)
+  - GHSA-m65p-9j7q-6w33  # arbitrary file read on unauthenticated servers (server)
+  - GHSA-wqmh-qccw-pqwf  # FileStore trace ID path traversal (server file store)
+  - GHSA-2cm6-r77w-6g96  # trace API endpoints lack authorization (server)
+  - GHSA-75cm-x2w3-8mgf  # unauthenticated FastAPI routes (server)
+  - GHSA-r5m9-wm49-959f  # gateway secrets enumeration (server)
+  - GHSA-46r5-x6jq-v8g6  # AJAX endpoint authorization bypass (server)
+  - GHSA-fh64-r2vc-xvhr  # stored XSS from MLmodel YAML in the UI (server)
+  - GHSA-gqvg-gmmx-x4hm  # pickle check bypass via the statsmodels flavor (unused)
+  - GHSA-j7qq-vr8c-xvw3  # CrewAI autologging records API keys (unused)
+  - GHSA-f2m9-wcf4-cwwx  # temp file with loose permissions (only on shared machines)
+
+  # cryptography 46.0.7 is capped below 47 by mlflow==3.10.1.
+  # Remove when: together with the mlflow group
+  - GHSA-537c-gmf6-5ccf  # vulnerable OpenSSL bundled in the wheels
+  - GHSA-g6cj-pr64-35w5  # PKCS#7 EnvelopedData Bleichenbacher oracle
+  - GHSA-jwv3-5hgf-82ww  # exponential path building with duplicate intermediates
+  - GHSA-m2h6-j472-rp4c  # verifier accepts wildcard DNS names
+
+  # torch~=2.9.0 matches the AWS PyTorch 2.9.0 training image. Low severity, and the
+  # affected functions aren't used.
+  # Remove when: the image and pin move to torch >= 2.13
+  - GHSA-qfhq-4f3w-5fph  # memory corruption in torch.lstm_cell
+  - GHSA-rrmf-rvhw-rf47  # memory corruption in torch.jit.script
