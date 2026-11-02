@@ -48,7 +48,7 @@ scene-classifier/
 │   ├── raw/                # Local samples only (gitignored). Full data lives in S3.
 │   └── processed/
 ├── notebooks/              # Exploration and analysis
-├── scripts/                # Entry points, e.g. train.py submits a Training Job
+├── scripts/                # Entry points, e.g. launch_job.py submits a Training Job that runs train.py
 ├── serving/                # Inference code for SageMaker endpoints
 ├── tests/                  # pytest tests
 ├── src/
@@ -132,7 +132,7 @@ s3://<bucket>/scene-classifier/
 
 ### 6. Training and fine-tuning
 
-- `scripts/train.py` is the launcher. It submits a Training Job with the SageMaker Python SDK (`ModelTrainer`). SDK V3 moved the import paths (`from sagemaker.train import ModelTrainer`); V2 examples online use different ones, so match the docs to the installed major version.
+- `scripts/launch_job.py` is the launcher. It submits a Training Job with the SageMaker Python SDK (`ModelTrainer`), and the job runs `scripts/train.py`. SDK V3 moved the import paths (`from sagemaker.train import ModelTrainer`); V2 examples online use different ones, so match the docs to the installed major version.
 - The job runs the `src/scene_classifier/` code in an AWS PyTorch Deep Learning Container on a GPU instance, e.g. ml.g4dn.xlarge or ml.g5.xlarge. The instance type needs an approved service quota (separate quotas for on-demand and spot training).
 - Input is a dataset prefix in S3, and the trained model is written back to S3.
 - Hyperparameters come from `conf/`.
