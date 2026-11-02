@@ -1,7 +1,7 @@
 from typing import Any
 import torch
 import torch.nn as nn
-import lightning as L
+import lightning.pytorch as L
 from lightning.pytorch.utilities.types import OptimizerLRScheduler
 from torch import optim
 from torchmetrics import MetricCollection

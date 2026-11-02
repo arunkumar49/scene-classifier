@@ -1,0 +1,7 @@
+# SageMaker Training Jobs
+defaults:
+  - default
+  - _self_
+
+accelerator: gpu
+precision: 16-mixed

@@ -1,5 +1,0 @@
-learning_rate: 1e-4
-epochs: 4
-optimizer: null
-regularization: null
-dropout: null

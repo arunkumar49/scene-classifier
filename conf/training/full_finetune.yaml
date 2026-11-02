@@ -1,0 +1,7 @@
+# Fine-tune the whole network
+defaults:
+  - default
+  - _self_
+
+freeze_backbone: false
+learning_rate: 1e-4

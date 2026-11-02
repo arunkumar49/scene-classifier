@@ -1,0 +1,5 @@
+# Shared base for cpu and gpu; not selected on its own
+devices: 1
+limit_train_batches: 1.0
+limit_val_batches: 1.0
+limit_test_batches: 1.0

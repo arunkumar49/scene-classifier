@@ -1,0 +1,7 @@
+# Train only the new classification head; the pretrained backbone stays frozen
+defaults:
+  - default
+  - _self_
+
+freeze_backbone: true
+learning_rate: 1e-3

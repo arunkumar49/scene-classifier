@@ -1,0 +1,8 @@
+# Local runs: MLflow writes to ./mlflow.db unless MLFLOW_TRACKING_URI is set
+defaults:
+  - default
+  - _self_
+
+tracking_uri: ${oc.env:MLFLOW_TRACKING_URI,sqlite:///mlflow.db}
+log_model: false
+git_sha: ${oc.env:GIT_COMMIT_SHA,null}
