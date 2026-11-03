@@ -1,7 +1,7 @@
 # Primary config: one option from each config group
 defaults:
   - data: hf_intel-image-classification
-  - model: vit-base
+  - model: vit_base
   - training: head_only
   - trainer: cpu
   - tracking: local
