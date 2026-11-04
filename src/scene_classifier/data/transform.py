@@ -9,10 +9,22 @@ from transformers import AutoImageProcessor
 
 from scene_classifier.utils.model_config import ModelConfig
 
+
 # Train-only augmentation, hardcoded until the Hydra config exists
+CROP_SCALE = (0.35, 1.0)        # scenes tolerate fairly tight crops
 HFLIP_P = 0.5
-ROTATION_DEGREES = 10
-COLOR_JITTER = {"brightness": 0.2, "contrast": 0.2, "saturation": 0.2}
+RANDAUG_OPS, RANDAUG_MAG = 2, 7  # moderate; lower the magnitude for short fine-tunes
+ERASE_P = 0.25
+
+
+
+def load_processor(model_cfg: ModelConfig) -> Any:
+    # use_fast=True so processor.size is a SizeDict with attribute access
+    return AutoImageProcessor.from_pretrained(model_cfg.checkpoint, use_fast=True)
+
+
+def _interpolation(processor: Any) -> InterpolationMode:
+    return InterpolationMode[Image.Resampling(processor.resample).name]
 
 
 def _resize_steps(processor: Any, checkpoint: str) -> list[v2.Transform]:
@@ -21,8 +33,7 @@ def _resize_steps(processor: Any, checkpoint: str) -> list[v2.Transform]:
     """
     # Any: each concrete processor sets size and resample; no shared base declares them
     # resample is an int for some processors and a PIL Resampling enum for others
-    interpolation = InterpolationMode[Image.Resampling(processor.resample).name]
-    resize = partial(v2.Resize, interpolation=interpolation, antialias=True)
+    resize = partial(v2.Resize, interpolation=_interpolation(processor), antialias=True)
 
     # size is a SizeDict whose unset fields are None, so read attributes, not keys
     size = processor.size
@@ -42,12 +53,23 @@ def _resize_steps(processor: Any, checkpoint: str) -> list[v2.Transform]:
     )
 
 
+def _output_size(processor: Any) -> tuple[int, int]:
+    """Final (H, W) the model sees, so the train crop matches eval."""
+    size = processor.size
+    if size.height is not None and size.width is not None:
+        return size.height, size.width
+    crop = getattr(processor, "crop_size", None)
+    if crop is not None and getattr(processor, "do_center_crop", False):
+        return crop.height, crop.width
+    return size.shortest_edge, size.shortest_edge
+
+
 def build_eval_transforms(model_cfg: ModelConfig) -> v2.Compose:
     """
     Build the validation, test and serving transforms: the checkpoint's own
     preprocessing, without augmentation.
     """
-    processor = AutoImageProcessor.from_pretrained(model_cfg.checkpoint)
+    processor = load_processor(model_cfg)
     return v2.Compose(
         [
             v2.RGB(),  # greyscale, RGBA or palette images -> 3 channels
@@ -60,20 +82,30 @@ def build_eval_transforms(model_cfg: ModelConfig) -> v2.Compose:
 
 
 def build_train_transforms(model_cfg: ModelConfig) -> v2.Compose:
-    """
-    Build the training transforms: the eval preprocessing plus a random horizontal
-    flip, small rotation and colour jitter.
-    """
-    processor = AutoImageProcessor.from_pretrained(model_cfg.checkpoint)
+    """Training: random crop at the eval output size, flip, RandAugment, random erasing."""
+    processor = load_processor(model_cfg)
+    
+    interp = _interpolation(processor)
+    
+    # Fill uncovered pixels with the dataset mean (uint8) instead of black
+    mean_fill = [round(m * 255) for m in processor.image_mean]
+    
     return v2.Compose(
         [
             v2.RGB(),
             v2.ToImage(),
-            *_resize_steps(processor, model_cfg.checkpoint),
-            v2.RandomHorizontalFlip(p=HFLIP_P),
-            v2.RandomRotation((-ROTATION_DEGREES, ROTATION_DEGREES)),
-            v2.ColorJitter(**COLOR_JITTER),
+            v2.RandomResizedCrop(
+                _output_size(processor), scale=CROP_SCALE, interpolation=interp, antialias=True
+            ),
+            # *_resize_steps(processor, model_cfg.checkpoint),
+            # v2.RandomHorizontalFlip(p=HFLIP_P),
+            # v2.RandomRotation((-ROTATION_DEGREES, ROTATION_DEGREES)),
+            # v2.ColorJitter(**COLOR_JITTER),
+            v2.RandAugment(
+                num_ops=RANDAUG_OPS, magnitude=RANDAUG_MAG, interpolation=interp, fill=mean_fill
+            ),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=processor.image_mean, std=processor.image_std),
+            v2.RandomErasing(p=ERASE_P, scale=(0.02, 0.2)),  # tensor op, so after Normalize
         ]
     )
